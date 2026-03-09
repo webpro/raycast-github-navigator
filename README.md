@@ -19,7 +19,7 @@ Requires [Raycast][2] and [Node.js][3] 20+.
 
 ```sh
 git clone https://github.com/webpro/raycast-github-navigator.git
-cd github-navigator
+cd raycast-github-navigator
 npm install
 npm run dev
 ```
