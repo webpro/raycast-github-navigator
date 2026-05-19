@@ -53,6 +53,14 @@ You'll be prompted to enter the token when you first run the command.
 | Issues/PRs label  | Show open issues/PRs count                | On      |
 | Reuse browser tab | Focus existing tab instead of opening new | Off     |
 
+## Firefox / Zen
+
+The "Reuse existing browser tab" feature and the "Add Bookmark" URL pre-fill
+from the active tab work out of the box for Chrome and Safari (via AppleScript).
+
+For Firefox and Zen, a companion browser extension and native messaging host are
+required — see [browser-tab-bridge][5] to set this up.
+
 ## Tip: Hotkey
 
 Assign a global hotkey to open this command directly:
@@ -62,3 +70,4 @@ Raycast Settings → Extensions → GitHub Navigator → Navigate GitHub → Hot
 [2]: https://raycast.com
 [3]: https://nodejs.org
 [4]: https://github.com/settings/tokens
+[5]: https://github.com/webpro/browser-tab-bridge

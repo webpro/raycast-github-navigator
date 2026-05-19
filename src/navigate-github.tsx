@@ -1,6 +1,6 @@
 import { ActionPanel, Action, List, getPreferenceValues, closeMainWindow, open } from '@raycast/api';
 import { useCachedPromise, useFrecencySorting } from '@raycast/utils';
-import { openInBrowserTab } from 'open-in-browser-tab';
+import { openInBrowserTab } from 'browser-tab-bridge';
 import { sortRepos } from './repos';
 import type { Preferences, Repository } from './types';
 import { join } from 'node:path';
