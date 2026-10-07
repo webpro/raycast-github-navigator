@@ -81,17 +81,18 @@
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.104.17",
-    "@raycast/utils": "^2.2.4",
+    "@raycast/api": "^2.6.3",
+    "@raycast/utils": "^2.3.2",
     "browser-tab-bridge": "^0.1.1"
   },
   "devDependencies": {
-    "@raycast/eslint-config": "^2.1.1",
-    "@types/node": "24.12.4",
-    "@types/react": "19.2.14",
-    "eslint": "^10.4.0",
-    "prettier": "^3.8.3",
-    "typescript": "^6.0.3"
+    "@raycast/eslint-config": "^2.2.0",
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "scripts": {
     "build": "ray build",
