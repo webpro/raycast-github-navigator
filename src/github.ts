@@ -30,13 +30,19 @@ const ORG_REPOS_QUERY = `query($org: String!, $cursor: String) {
   }
 }`;
 
-const ORGS_QUERY = `query {
+const TOTALS_QUERY = `query {
   viewer {
+    repositories(affiliations: [OWNER, COLLABORATOR]) { totalCount }
     organizations(first: 100) {
-      nodes { login }
+      nodes { login repositories { totalCount } }
     }
   }
 }`;
+
+export interface Progress {
+  loaded: number;
+  total: number;
+}
 
 function toRepo(node: Record<string, unknown>): Repository {
   return {
@@ -51,11 +57,12 @@ function toRepo(node: Record<string, unknown>): Repository {
   };
 }
 
-async function graphql(token: string, query: string, variables: Record<string, unknown> = {}) {
+async function graphql(token: string, query: string, variables: Record<string, unknown>, signal?: AbortSignal) {
   const response = await fetch('https://api.github.com/graphql', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, variables }),
+    signal,
   });
   if (!response.ok) throw new Error(response.statusText);
   const json = await response.json();
@@ -63,9 +70,20 @@ async function graphql(token: string, query: string, variables: Record<string, u
   return json.data;
 }
 
-export async function fetchAllRepos(token: string): Promise<Repository[]> {
+export async function fetchAllRepos(
+  token: string,
+  onProgress: (repos: Repository[], progress: Progress) => void,
+  signal?: AbortSignal,
+): Promise<Repository[]> {
   const seen = new Set<string>();
   const allRepos: Repository[] = [];
+
+  // Fetch repo totals and orgs first, to report progress
+  const { viewer } = await graphql(token, TOTALS_QUERY, {}, signal);
+  const orgs: { login: string; repositories: { totalCount: number } }[] = viewer.organizations.nodes;
+  const total = orgs.reduce((sum, org) => sum + org.repositories.totalCount, viewer.repositories.totalCount);
+  let loaded = 0;
+  onProgress(allRepos, { loaded, total });
 
   function addRepos(nodes: Record<string, unknown>[]) {
     for (const node of nodes) {
@@ -75,26 +93,25 @@ export async function fetchAllRepos(token: string): Promise<Repository[]> {
         allRepos.push(repo);
       }
     }
+    loaded += nodes.length;
+    onProgress(allRepos, { loaded, total });
   }
 
   // Fetch user's own + collaborator repos
   let cursor: string | null = null;
   while (true) {
-    const data = await graphql(token, USER_REPOS_QUERY, { cursor });
+    const data = await graphql(token, USER_REPOS_QUERY, { cursor }, signal);
     const { nodes, pageInfo } = data.viewer.repositories;
     addRepos(nodes);
     if (!pageInfo.hasNextPage) break;
     cursor = pageInfo.endCursor;
   }
 
-  // Fetch orgs, then all repos per org
-  const orgsData = await graphql(token, ORGS_QUERY);
-  const orgs: string[] = orgsData.viewer.organizations.nodes.map((n: { login: string }) => n.login);
-
-  for (const org of orgs) {
+  // Fetch all repos per org
+  for (const { login: org } of orgs) {
     cursor = null;
     while (true) {
-      const data = await graphql(token, ORG_REPOS_QUERY, { org, cursor });
+      const data = await graphql(token, ORG_REPOS_QUERY, { org, cursor }, signal);
       const { nodes, pageInfo } = data.organization.repositories;
       addRepos(nodes);
       if (!pageInfo.hasNextPage) break;

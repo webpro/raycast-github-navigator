@@ -1,6 +1,7 @@
-import { ActionPanel, Action, List, getPreferenceValues, closeMainWindow, open } from '@raycast/api';
-import { useCachedPromise, useFrecencySorting } from '@raycast/utils';
+import { ActionPanel, Action, List, Toast, getPreferenceValues, closeMainWindow, open, showToast } from '@raycast/api';
+import { useCachedState, useFrecencySorting, usePromise } from '@raycast/utils';
 import { openInBrowserTab } from 'browser-tab-bridge';
+import { useRef } from 'react';
 import { fetchAllRepos } from './github';
 import { sortRepos } from './repos';
 import type { Preferences, Repository } from './types';
@@ -21,14 +22,35 @@ const getActions = (repo: Repository) => {
 export default function Command() {
   const { personalAccessToken, showStars, showIssuesPRs, reuseTab } = getPreferenceValues<Preferences>();
 
-  const { data, isLoading } = useCachedPromise(fetchAllRepos, [personalAccessToken], {
-    keepPreviousData: true,
-  });
+  const [repos, setRepos] = useCachedState<Repository[]>('repositories', []);
+  const abortable = useRef<AbortController>(null);
 
-  const { data: sortedData, visitItem } = useFrecencySorting<Repository>(sortRepos(data), { key: repo => repo.id });
+  const { isLoading } = usePromise(
+    async (token: string) => {
+      const toast = await showToast({ style: Toast.Style.Animated, title: 'Loading repositories' });
+      try {
+        const latest = await fetchAllRepos(
+          token,
+          (fetched, { loaded, total }) => {
+            toast.message = `${loaded} of ${total}`;
+            const names = new Set(fetched.map(repo => repo.full_name));
+            setRepos(cached => [...fetched, ...cached.filter(repo => !names.has(repo.full_name))]);
+          },
+          abortable.current?.signal,
+        );
+        setRepos(latest);
+      } finally {
+        await toast.hide();
+      }
+    },
+    [personalAccessToken],
+    { abortable },
+  );
+
+  const { data: sortedData, visitItem } = useFrecencySorting<Repository>(sortRepos(repos), { key: repo => repo.id });
 
   return (
-    <List isLoading={isLoading && !data?.length} searchBarPlaceholder="Search repositories..." throttle>
+    <List isLoading={isLoading && !repos.length} searchBarPlaceholder="Search repositories..." throttle>
       {sortedData.map(repo => {
         return (
           <List.Item
@@ -67,4 +89,3 @@ export default function Command() {
     </List>
   );
 }
-
