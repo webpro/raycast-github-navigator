@@ -25,7 +25,7 @@
           "type": "password",
           "required": true,
           "title": "GitHub Token",
-          "description": "Your GitHub's personal access token. Required scopes: notifications repo project read:org read:user.",
+          "description": "Your GitHub's personal access token. Required scopes: repo read:org.",
           "link": "https://github.com/settings/tokens",
           "placeholder": "Enter your personal access token"
         },

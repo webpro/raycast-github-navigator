@@ -40,7 +40,6 @@ The extension requires a [personal access token][4] (classic) with these scopes:
 
 - `repo` — access repository data
 - `read:org` — list organization repos
-- `read:user` — identify your account
 
 You'll be prompted to enter the token when you first run the command.
 
