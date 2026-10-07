@@ -1,4 +1,14 @@
-import { ActionPanel, Action, List, Toast, getPreferenceValues, closeMainWindow, open, showToast } from '@raycast/api';
+import {
+  ActionPanel,
+  Action,
+  Keyboard,
+  List,
+  Toast,
+  getPreferenceValues,
+  closeMainWindow,
+  open,
+  showToast,
+} from '@raycast/api';
 import { useCachedState, useFrecencySorting, usePromise } from '@raycast/utils';
 import { openInBrowserTab } from 'browser-tab-bridge';
 import { useRef } from 'react';
@@ -71,7 +81,7 @@ export default function Command() {
                       title={action.title}
                       shortcut={{
                         modifiers: ['cmd'],
-                        key: String(index + 1),
+                        key: String(index + 1) as Keyboard.KeyEquivalent,
                       }}
                       onAction={async () => {
                         await (reuseTab ? openInBrowserTab(action.url) : open(action.url));

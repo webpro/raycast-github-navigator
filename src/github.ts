@@ -44,6 +44,18 @@ export interface Progress {
   total: number;
 }
 
+interface RepoConnection {
+  pageInfo: { hasNextPage: boolean; endCursor: string };
+  nodes: Record<string, unknown>[];
+}
+
+interface Totals {
+  viewer: {
+    repositories: { totalCount: number };
+    organizations: { nodes: { login: string; repositories: { totalCount: number } }[] };
+  };
+}
+
 function toRepo(node: Record<string, unknown>): Repository {
   return {
     id: String(node.databaseId),
@@ -57,7 +69,12 @@ function toRepo(node: Record<string, unknown>): Repository {
   };
 }
 
-async function graphql(token: string, query: string, variables: Record<string, unknown>, signal?: AbortSignal) {
+async function graphql<T>(
+  token: string,
+  query: string,
+  variables: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<T> {
   const response = await fetch('https://api.github.com/graphql', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -65,7 +82,7 @@ async function graphql(token: string, query: string, variables: Record<string, u
     signal,
   });
   if (!response.ok) throw new Error(response.statusText);
-  const json = await response.json();
+  const json = (await response.json()) as { data: T; errors?: { message: string }[] };
   if (json.errors) throw new Error(json.errors[0].message);
   return json.data;
 }
@@ -79,8 +96,8 @@ export async function fetchAllRepos(
   const allRepos: Repository[] = [];
 
   // Fetch repo totals and orgs first, to report progress
-  const { viewer } = await graphql(token, TOTALS_QUERY, {}, signal);
-  const orgs: { login: string; repositories: { totalCount: number } }[] = viewer.organizations.nodes;
+  const { viewer } = await graphql<Totals>(token, TOTALS_QUERY, {}, signal);
+  const orgs = viewer.organizations.nodes;
   const total = orgs.reduce((sum, org) => sum + org.repositories.totalCount, viewer.repositories.totalCount);
   let loaded = 0;
   onProgress(allRepos, { loaded, total });
@@ -100,7 +117,12 @@ export async function fetchAllRepos(
   // Fetch user's own + collaborator repos
   let cursor: string | null = null;
   while (true) {
-    const data = await graphql(token, USER_REPOS_QUERY, { cursor }, signal);
+    const data: { viewer: { repositories: RepoConnection } } = await graphql(
+      token,
+      USER_REPOS_QUERY,
+      { cursor },
+      signal,
+    );
     const { nodes, pageInfo } = data.viewer.repositories;
     addRepos(nodes);
     if (!pageInfo.hasNextPage) break;
@@ -111,7 +133,12 @@ export async function fetchAllRepos(
   for (const { login: org } of orgs) {
     cursor = null;
     while (true) {
-      const data = await graphql(token, ORG_REPOS_QUERY, { org, cursor }, signal);
+      const data: { organization: { repositories: RepoConnection } } = await graphql(
+        token,
+        ORG_REPOS_QUERY,
+        { org, cursor },
+        signal,
+      );
       const { nodes, pageInfo } = data.organization.repositories;
       addRepos(nodes);
       if (!pageInfo.hasNextPage) break;
