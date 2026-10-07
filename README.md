@@ -11,6 +11,7 @@ Navigate your GitHub repositories from Raycast — personal, collaborator, and o
 - Frecency sorting: repos you use most float to the top over time
 - Quick actions: open repo, issues, PRs, actions, releases, settings, or dependents (⌘1–⌘7)
 - Reuse browser tab: optionally focus an existing tab instead of opening a new one
+- Cached repo list: refreshed on open when older than a day, or on demand with ⌘R
 - Configurable labels for stars and issues/PRs counts
 
 ## Install
